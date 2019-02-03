@@ -26,9 +26,11 @@ if not (tracking_path.endswith('npz') and video_path.endswith(('.avi', '.mov', '
  eye_coords_array, tracking_params) = analysis.open_saved_data(tracking_path)
 
 heading_angle_array = analysis.fix_heading_angles(heading_angle_array)
-tail_angle_array = analysis.get_freeswimming_tail_angles(tail_coords_array, heading_angle_array, body_position_array)
+tail_angle_array = analysis.calculate_freeswimming_tail_angles(heading_angle_array, body_position_array, tail_coords_array)
 heading_angle_array = heading_angle_array[0, :, 0]
-tail_end_angle_array = analysis.get_tail_end_angles(tail_angle_array, num_to_average=1)[0]
+tail_end_angle_array = analysis.calculate_tail_end_angles(tail_angle_array[0,:,:], num_to_average=1)
+
+print(tail_end_angle_array.shape)
 
 # Get info about the video
 fps, n_frames_total = open_media.get_video_info(video_path)
@@ -56,7 +58,7 @@ big_split_frame_nums = utilities.split_list_into_chunks(range(n_frames), big_chu
 
 ffmpeg_writer = an.writers["ffmpeg"] # Creates an ffmpeg writer.
 metadata = dict(title = "Animation for Assignment 10", author = "Nicholas Guilbeault") # Creates metadata for the visual animation.
-writer = ffmpeg_writer(fps = 60, metadata = metadata, bitrate = 3200) # Specifies features of the animation. The FPS is set to 15 and the bitrate is set to 1600.
+writer = ffmpeg_writer(fps = 60, metadata = metadata, bitrate = 3200, codec='mjpeg') # Specifies features of the animation. The FPS is set to 15 and the bitrate is set to 1600.
 
 # Create the figure & subplots
 figure_plot = plt.figure(figsize=(10, 4))
@@ -73,6 +75,7 @@ plt.tight_layout()
 subplot_1.autoscale_view('tight')
 
 timepoints = np.linspace(0, n_frames/fps, n_frames)
+print(timepoints.shape)
 
 subplot_2.set_xlim(xlim_start, xlim_end) # Sets the x axis limits.
 subplot_2.set_ylim(-3, 3) # Sets the y axis limits.
@@ -104,7 +107,7 @@ frame_counter = 0
 
 # Create the animation and save it into a video file.
 print("Creating the animation and saving it into a video file...\n") # Prints a message
-with writer.saving(figure_plot, "{}_animation.mp4".format(os.path.splitext(os.path.basename(video_path))[0]), 200): # Facilitates the writing of the animation. Plots the animation onto the figure and saves the animation into a file called NG_Assignment10_Animation.mp4.
+with writer.saving(figure_plot, "{}_animation.avi".format(os.path.splitext(os.path.basename(video_path))[0]), 200): # Facilitates the writing of the animation. Plots the animation onto the figure and saves the animation into a file called NG_Assignment10_Animation.mp4.
     for i in range(len(big_split_frame_nums)):
         print("Processing frames {} to {}...".format(big_split_frame_nums[i][0], big_split_frame_nums[i][-1]))
 
@@ -125,7 +128,7 @@ with writer.saving(figure_plot, "{}_animation.mp4".format(os.path.splitext(os.pa
 
             # Sets the value for each variable at each time step.
             frame = frames[i]
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             xlim_start += 1/fps
             xlim_end   += 1/fps
 
